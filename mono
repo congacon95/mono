@@ -50,7 +50,11 @@ cmd_build() {
             echo "🔨 Building frontend..."
             if [ -d "$CLIENTS_WEB" ]; then
                 cd "$CLIENTS_WEB"
-                npm ci
+                if [ -f "package-lock.json" ] || [ -f "npm-shrinkwrap.json" ]; then
+                    npm ci
+                else
+                    npm install
+                fi
                 npm run build
                 echo "✅ Frontend built successfully"
             else
@@ -166,19 +170,21 @@ cmd_test() {
             ;;
         all)
             echo "🧪 Running all test suites..."
-            set +e
-            cmd_test backend
-            BACKEND_RESULT=$?
-            cmd_test frontend
-            FRONTEND_RESULT=$?
-            cmd_test e2e
-            E2E_RESULT=$?
-            set -e
+            BACKEND_RESULT=0
+            FRONTEND_RESULT=0
+            E2E_RESULT=0
+            
+            cmd_test backend || BACKEND_RESULT=$?
+            cmd_test frontend || FRONTEND_RESULT=$?
+            cmd_test e2e || E2E_RESULT=$?
             
             if [ $BACKEND_RESULT -eq 0 ] && [ $FRONTEND_RESULT -eq 0 ] && [ $E2E_RESULT -eq 0 ]; then
                 echo "✅ All test suites passed"
             else
                 echo "⚠️  Some test suites failed"
+                [ $BACKEND_RESULT -ne 0 ] && echo "   - Backend tests: FAILED (exit code: $BACKEND_RESULT)"
+                [ $FRONTEND_RESULT -ne 0 ] && echo "   - Frontend tests: FAILED (exit code: $FRONTEND_RESULT)"
+                [ $E2E_RESULT -ne 0 ] && echo "   - E2E tests: FAILED (exit code: $E2E_RESULT)"
                 exit 1
             fi
             ;;

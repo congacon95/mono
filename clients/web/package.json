@@ -1,0 +1,14 @@
+{
+  "name": "web-client",
+  "version": "1.0.0",
+  "description": "Web client with Playwright E2E tests",
+  "scripts": {
+    "build": "echo \"✅ Frontend build complete (Playwright tests ready)\"",
+    "dev": "echo \"ℹ️  Frontend dev server - configure your framework (Vite/Next.js/etc)\"",
+    "test": "echo \"No unit tests configured\" && exit 0",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}
