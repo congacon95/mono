@@ -9,21 +9,27 @@ REPO_ROOT="$(cd "$STEM_DIR/../../.." && pwd)"
 
 echo "=== core-known-states: Running gates ==="
 
-# Gate 1: Check for Playwright config
+# Gate 1: Check for Playwright config (in clients/web or root)
 check_playwright_config() {
     if [[ -f "$REPO_ROOT/playwright.config.ts" ]]; then
-        echo "✓ Playwright configuration present"
+        echo "✓ Playwright configuration present (root)"
+    elif [[ -f "$REPO_ROOT/clients/web/playwright.config.ts" ]]; then
+        echo "✓ Playwright configuration present (clients/web)"
     else
         echo "⚠ Missing playwright.config.ts"
     fi
 }
 
-# Gate 2: Check for test directory
+# Gate 2: Check for test directory (in clients/web or root)
 check_tests_directory() {
     if [[ -d "$REPO_ROOT/tests" ]]; then
         local test_count
         test_count=$(find "$REPO_ROOT/tests" -name "*.spec.ts" -type f 2>/dev/null | wc -l)
-        echo "✓ Tests directory found ($test_count spec files)"
+        echo "✓ Tests directory found (root, $test_count spec files)"
+    elif [[ -d "$REPO_ROOT/clients/web/tests" ]]; then
+        local test_count
+        test_count=$(find "$REPO_ROOT/clients/web/tests" -name "*.spec.ts" -type f 2>/dev/null | wc -l)
+        echo "✓ Tests directory found (clients/web, $test_count spec files)"
     else
         echo "⚠ Missing tests/ directory"
     fi
