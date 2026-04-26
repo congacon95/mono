@@ -1,0 +1,104 @@
+# Agents (this repository)
+
+## Read first
+
+**Repository entry:** this file (`.cursor/rules/agents-entry.mdc`) is **always-on** in Cursor. It orients **planes, non‑negotiables, and where procedure lives** — not stem matrices, command catalogs, or feature-specific law (**skills** + **PO** own those).
+
+## Four planes
+
+**PO** — Intent, acceptance, RouteName, non-goals in repo-root **`app/<Subsystem>/<Module>/…`**.
+
+**Portable law** — **`.cursor/skills/core-*`** stems and **`.cursor/skills/app-portable-recipes/`** (checks beside normative prose). Every **`core-*`** folder includes a skill-root **`enforce.sh`** (bundled gates or a norms-only no-op); **`./mono enforce <stem>`** resolves stems to that entry — hub docs (**repository entry**, **`.cursor/skills/README.md`**) do not inventory inner **`*.sh`** drivers. **Driver policy** (fold extra root drivers into **`enforce.sh`** or documented **`enforce-<slug>.sh`**; prefer **`rules/`** over ambiguous skill-root **`check/`**): **refactoring** **`SKILL.md`** § Skill-root **`enforce.sh`**.
+
+**Ops** — **`k8s/`** + **core-ops-k8s**; cluster verify when **`k8s/`** changes.
+
+**Code** — **`servers/*`**, **`clients/*`**. **One product stack per change** unless the brief explicitly splits work.
+
+## Non‑negotiables
+
+- When behavior depends on product intent: attach **this hub** + **linked PO capsule**.
+- **No upward Markdown links** from PO, **`k8s/`** operator docs, or generic editor config into portable skill trees — cite **stem ids** / slugs in prose.
+- **Agent terminal:** repo-wide **`rg`** (and similar): **explicit path** + **`</dev/null>`** so stdin never blocks.
+- Do **not** paste a second portable stem matrix — **`./mono enforce help`** and stem folders own runnable truth.
+
+## Where to read next
+
+| Need | Open |
+|------|------|
+| Delivery / read + verify chains (**R1–R4b**, **V1–V5**) | **core-tpm-delegate** `SKILL.md` |
+| Implement one stack | **core-implement-slice** |
+| PR review, evidence, gates | **core-review-pr** · **core-verify-pr** |
+| **`app/**` PO format | **core-po-product-docs** |
+| Naming, routing, layout, isolation | **core-structure-and-naming** (`structure.md`, **IDENTITY**) |
+| Known UI states / lifecycles / Playwright baselines (`RouteName::KNOWN_STATE`, **`.desktop-en.png`**) | **core-known-states** (`SKILL.md` §1–§6, `./mono enforce known-states`, `screenshot-mapping.md`) |
+| Role → first skill | **`.cursor/skills/README.md`** |
+
+## Workflow (one line)
+
+**PO** → **TPM** (stems + briefs; prefer **one stack per slice**) → **implementer** (cited portable law) → **review** (merge evidence) → churn into **PO** or **stems**.
+
+## IDE stance (all roles)
+
+**This file** = orientation; **skills** = procedure. Keep a **mission block** (goal, scope, stack(s), cited stems). **P0 / P1 / P2** for risk; **re-anchor** after long runs. If **RouteName / FeatureRoute / layout** matters, normalize from **core-structure-and-naming** before coding.
+
+## Portable stems
+
+From repo root: **`./mono enforce help`**, **`./mono enforce <stem>`**. Ticket / delegation stem ids: **`.cursor/skills/refactoring/replacement-blueprint.md`** § 1.
+
+## Global invariants (implementers)
+
+- **One stack** unless the brief splits work.
+- **Scope** = ticket + linked **PO** + **cited** stems — **no drive-bys**.
+- **Isolation:** no **`.cursor/skills/`** imports into product code; no cross-imports **`servers/*` ↔ `clients/*`**.
+- **Laravel first** for shared cross-stack surfaces unless PO names another lead.
+- **UI:** design system / primitives — no raw platform controls or thin pass-through wrappers where a stem already defines the pattern.
+- **Smallest change** — no extra files or helpers unless asked.
+- **New cross-cutting behavior:** portable prose + gate first (slice zero), then product — still **one stack per product PR**.
+- **Routing:** cited stems + contract helper — no ad-hoc route factories.
+- **No shims, placeholders, or half-measures** — complete slice or explicit multi-slice plan with removal.
+
+<a id="portable-process-intent"></a>
+
+## Portable process (intent)
+
+Process depth (intake, stack ownership, PR vs repo gates, maintainer SOP): **core-tpm-delegate** · **core-review-pr** · **core-verify-pr** · **core-structure-and-naming** · **core-portable-batch** · **refactoring**. Do not mirror **refactoring** doctrine or stem command recipes here.
+
+<a id="po-capsules-normative"></a>
+
+## PO capsules
+
+**Belongs / does not belong / editing discipline:** **core-po-product-docs** `SKILL.md` § **Normative**. **RouteName-first**; **no** Markdown links from **`app/**`** PO into **`servers/*`** / **`clients/*`** trees; run **`php .cursor/skills/core-docs-reader/check-doc-links.php app`** after PO edits.
+
+**Shippable Laravel FeatureRoute surfaces:** PO + tests + **`RouteName::KNOWN_STATE`** lifecycle bar — **core-known-states** **`SKILL.md`** §6 (co-located triple, Pest/Playwright expectations, optional **`inventory-po-capsule-gaps.php`**). **Artisan-only** `extends Command` trees are out of scope for Inertia pairing.
+
+<a id="defaults-normative"></a>
+
+## Defaults (normative)
+
+Doc placement, concern matrix, hub vs beside-the-code, **⬜/✅/❌** legend: **core-structure-and-naming** `structure.md` (**§ Product shape at a glance**, **§ Normative rules**). Reviewer taste: **core-comments**. **Normative first** → cited stems + portable batch; **contracts first** → portable law before wide product edits.
+
+<a id="feedback-and-churn"></a>
+
+## Feedback and churn
+
+Durable product narrative → **PO** capsules. Reusable rules → portable **skills**. Capsule shape → **core-po-product-docs**.
+
+<a id="verify-and-pr"></a>
+
+## Verify and merge requests
+
+**PR body commands, green batch vs rows, operator-facing Laravel UI bar:** **core-review-pr** `SKILL.md` (**§ PR evidence**, **§ Operator-facing Laravel UI closure**). Layer **V1–V5**: **core-verify-pr** + **core-tpm-delegate**.
+
+## Read order (implementers) — pointer
+
+No PO anchor → stop. Then: linked **PO** → **IDENTITY** / product-shape when naming matters → **cited stem prose** (not green alone) → **stack verify** + ops runbook for **your** stack → prove via **contract** / **structure** / portable batch / stack verify / **`./mono check`** as scope dictates. **Detail:** **core-implement-slice** `SKILL.md`.
+
+## Cursor role → primary skill
+
+| Stance | Skill |
+|--------|--------|
+| Stack implementer | **core-implement-slice** |
+| TPM / orchestrator | **core-tpm-delegate** |
+| Review-only | **core-review-pr** |
+| Naming / structure hygiene only | **core-structure-and-naming** (use **core-verify-pr** for command bundles, not full review by default) |
+| Ops / cluster | **core-ops-k8s** · **core-ops-stack** |

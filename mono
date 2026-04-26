@@ -1,155 +1,293 @@
-#!/usr/bin/env bash
-# mono - Monorepo CLI entry point
-# Usage: ./mono <command> [args]
+#!/bin/bash
 
-set -euo pipefail
+# Mono CLI - Monorepo orchestration tool
+set -e
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SKILLS_DIR="$REPO_ROOT/.cursor/skills"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SERVERS_LARAVEL="$SCRIPT_DIR/servers/laravel"
+CLIENTS_WEB="$SCRIPT_DIR/clients/web"
 
-show_help() {
-    cat << 'EOF'
-mono - Monorepo CLI
+usage() {
+    cat << HELP
+Mono CLI - Monorepo orchestration
 
-Usage: ./mono <command> [args]
+Usage: ./mono <command> [options]
 
 Commands:
-  enforce help          List all portable stems
-  enforce <stem>        Run a specific stem's gates
-  check                 Run scope-based verification
-  version               Show version info
-
-Portable Stems:
-  tpm-delegate          TPM / orchestrator role
-  implement-slice       Stack implementer role
-  review-pr             PR review role
-  verify-pr             PR verification role
-  po-product-docs       PO capsule format
-  structure-and-naming  Structure / naming hygiene
-  known-states          UI states / Playwright baselines
-  ops-k8s               Kubernetes operations
+  build       Build all projects or specific project (backend|frontend|all)
+  dev         Start development servers (backend|frontend|both)
+  test        Run test suites (backend|frontend|all)
+  enforce     Run enforcement checks (help|<stem>)
+  clean       Clean build artifacts
 
 Examples:
-  ./mono enforce help
-  ./mono enforce tpm-delegate
-  ./mono enforce structure
-  ./mono check
-EOF
+  ./mono build all
+  ./mono dev backend
+  ./mono test frontend
+  ./mono enforce known-states
+HELP
 }
 
-list_stems() {
-    echo "=== Portable Stems ==="
-    echo ""
-    for stem_dir in "$SKILLS_DIR"/core-*/; do
-        if [[ -d "$stem_dir" ]]; then
-            stem_name=$(basename "$stem_dir")
-            stem_name="${stem_name#core-}"
-            
-            # Check for SKILL.md to get description
-            if [[ -f "$stem_dir/SKILL.md" ]]; then
-                desc=$(head -3 "$stem_dir/SKILL.md" | grep "**Role:**" | sed 's/.*Role: //' | cut -d'-' -f1- | xargs)
-                if [[ -n "$desc" ]]; then
-                    printf "  %-25s %s\n" "$stem_name" "$desc"
-                else
-                    printf "  %-25s (no description)\n" "$stem_name"
-                fi
+cmd_build() {
+    local target="${1:-all}"
+    
+    case "$target" in
+        backend|laravel)
+            echo "🔨 Building Laravel backend..."
+            if [ -d "$SERVERS_LARAVEL" ]; then
+                cd "$SERVERS_LARAVEL"
+                composer install --no-interaction --prefer-dist --optimize-autoloader
+                php artisan config:cache
+                php artisan route:cache
+                php artisan view:cache
+                echo "✅ Laravel backend built successfully"
             else
-                printf "  %-25s (missing SKILL.md)\n" "$stem_name"
+                echo "❌ Laravel directory not found at $SERVERS_LARAVEL"
+                exit 1
             fi
-        fi
-    done
-    echo ""
-    echo "Run './mono enforce <stem>' to execute a stem's gates"
+            ;;
+        frontend|web)
+            echo "🔨 Building frontend..."
+            if [ -d "$CLIENTS_WEB" ]; then
+                cd "$CLIENTS_WEB"
+                npm ci
+                npm run build
+                echo "✅ Frontend built successfully"
+            else
+                echo "❌ Frontend directory not found at $CLIENTS_WEB"
+                exit 1
+            fi
+            ;;
+        all)
+            echo "🔨 Building all projects..."
+            cmd_build backend
+            cmd_build frontend
+            echo "✅ All projects built successfully"
+            ;;
+        *)
+            echo "❌ Unknown build target: $target"
+            echo "Valid targets: backend, frontend, all"
+            exit 1
+            ;;
+    esac
 }
 
-run_enforce() {
-    local stem="$1"
+cmd_dev() {
+    local target="${1:-both}"
     
-    if [[ -z "$stem" ]]; then
-        echo "Error: stem name required"
+    case "$target" in
+        backend|laravel)
+            echo "🚀 Starting Laravel development server..."
+            if [ -d "$SERVERS_LARAVEL" ]; then
+                cd "$SERVERS_LARAVEL"
+                php artisan serve --host=0.0.0.0 --port=8000
+            else
+                echo "❌ Laravel directory not found at $SERVERS_LARAVEL"
+                exit 1
+            fi
+            ;;
+        frontend|web)
+            echo "🚀 Starting frontend development server..."
+            if [ -d "$CLIENTS_WEB" ]; then
+                cd "$CLIENTS_WEB"
+                npm run dev
+            else
+                echo "❌ Frontend directory not found at $CLIENTS_WEB"
+                exit 1
+            fi
+            ;;
+        both)
+            echo "🚀 Starting both development servers..."
+            if [ ! -d "$SERVERS_LARAVEL" ] || [ ! -d "$CLIENTS_WEB" ]; then
+                echo "❌ Required directories not found"
+                exit 1
+            fi
+            
+            # Start backend in background
+            cd "$SERVERS_LARAVEL"
+            php artisan serve --host=0.0.0.0 --port=8000 &
+            BACKEND_PID=$!
+            
+            # Start frontend
+            cd "$CLIENTS_WEB"
+            npm run dev &
+            FRONTEND_PID=$!
+            
+            echo "Backend PID: $BACKEND_PID"
+            echo "Frontend PID: $FRONTEND_PID"
+            echo "Press Ctrl+C to stop both servers"
+            
+            wait
+            ;;
+        *)
+            echo "❌ Unknown dev target: $target"
+            echo "Valid targets: backend, frontend, both"
+            exit 1
+            ;;
+    esac
+}
+
+cmd_test() {
+    local target="${1:-all}"
+    
+    case "$target" in
+        backend|laravel)
+            echo "🧪 Running Laravel backend tests..."
+            if [ -d "$SERVERS_LARAVEL" ]; then
+                cd "$SERVERS_LARAVEL"
+                php artisan test --colors=always
+                echo "✅ Backend tests completed"
+            else
+                echo "❌ Laravel directory not found at $SERVERS_LARAVEL"
+                exit 1
+            fi
+            ;;
+        frontend|web)
+            echo "🧪 Running frontend tests..."
+            if [ -d "$CLIENTS_WEB" ]; then
+                cd "$CLIENTS_WEB"
+                npm run test
+                echo "✅ Frontend tests completed"
+            else
+                echo "❌ Frontend directory not found at $CLIENTS_WEB"
+                exit 1
+            fi
+            ;;
+        e2e|playwright)
+            echo "🧪 Running Playwright E2E tests..."
+            if [ -d "$CLIENTS_WEB" ]; then
+                cd "$CLIENTS_WEB"
+                npx playwright test
+                echo "✅ E2E tests completed"
+            else
+                echo "❌ Frontend directory not found at $CLIENTS_WEB"
+                exit 1
+            fi
+            ;;
+        all)
+            echo "🧪 Running all test suites..."
+            set +e
+            cmd_test backend
+            BACKEND_RESULT=$?
+            cmd_test frontend
+            FRONTEND_RESULT=$?
+            cmd_test e2e
+            E2E_RESULT=$?
+            set -e
+            
+            if [ $BACKEND_RESULT -eq 0 ] && [ $FRONTEND_RESULT -eq 0 ] && [ $E2E_RESULT -eq 0 ]; then
+                echo "✅ All test suites passed"
+            else
+                echo "⚠️  Some test suites failed"
+                exit 1
+            fi
+            ;;
+        *)
+            echo "❌ Unknown test target: $target"
+            echo "Valid targets: backend, frontend, e2e, all"
+            exit 1
+            ;;
+    esac
+}
+
+cmd_enforce() {
+    local stem="${1:-help}"
+    
+    if [ "$stem" = "help" ]; then
+        echo "Available stems:"
+        echo "  - known-states: Verify known UI states and Playwright baselines"
+        echo "  - structure: Verify project structure and naming conventions"
+        echo "  - po-capsules: Verify PO capsule format and links"
+        echo ""
         echo "Usage: ./mono enforce <stem>"
-        echo "Run './mono enforce help' to list stems"
-        exit 1
+        return 0
     fi
     
-    if [[ "$stem" == "help" ]]; then
-        list_stems
-        return
-    fi
+    SKILLS_DIR="$SCRIPT_DIR/.cursor/skills"
     
-    local stem_dir="$SKILLS_DIR/core-$stem"
-    local enforce_script="$stem_dir/enforce.sh"
-    
-    if [[ ! -d "$stem_dir" ]]; then
-        echo "Error: stem 'core-$stem' not found"
-        list_stems
-        exit 1
-    fi
-    
-    if [[ ! -f "$enforce_script" ]]; then
-        echo "Error: no enforce.sh found for stem 'core-$stem'"
-        exit 1
-    fi
-    
-    if [[ ! -x "$enforce_script" ]]; then
-        chmod +x "$enforce_script"
-    fi
-    
-    echo "Running gates for: core-$stem"
-    echo ""
-    bash "$enforce_script"
-}
-
-run_check() {
-    echo "=== Running scope-based verification ==="
-    echo ""
-    
-    # Run all stem gates
-    for stem_dir in "$SKILLS_DIR"/core-*/; do
-        if [[ -d "$stem_dir" ]]; then
-            local enforce_script="$stem_dir/enforce.sh"
-            if [[ -x "$enforce_script" ]]; then
-                echo "---"
-                bash "$enforce_script" || true
-                echo ""
+    case "$stem" in
+        known-states)
+            if [ -f "$SKILLS_DIR/core-known-states/enforce.sh" ]; then
+                bash "$SKILLS_DIR/core-known-states/enforce.sh"
+            else
+                echo "⚠️  Known-states enforce script not found"
             fi
-        fi
-    done
-    
-    echo "=== Verification complete ==="
+            ;;
+        structure)
+            if [ -f "$SKILLS_DIR/core-structure-and-naming/enforce.sh" ]; then
+                bash "$SKILLS_DIR/core-structure-and-naming/enforce.sh"
+            else
+                echo "⚠️  Structure enforce script not found"
+            fi
+            ;;
+        po-capsules)
+            if [ -f "$SKILLS_DIR/core-po-product-docs/enforce.sh" ]; then
+                bash "$SKILLS_DIR/core-po-product-docs/enforce.sh"
+            else
+                echo "⚠️  PO capsules enforce script not found"
+            fi
+            ;;
+        *)
+            echo "❌ Unknown stem: $stem"
+            echo "Run './mono enforce help' for available stems"
+            exit 1
+            ;;
+    esac
 }
 
-show_version() {
-    echo "mono v1.0.0"
-    echo "Monorepo CLI for portable stems enforcement"
+cmd_clean() {
+    echo "🧹 Cleaning build artifacts..."
+    
+    if [ -d "$SERVERS_LARAVEL" ]; then
+        cd "$SERVERS_LARAVEL"
+        rm -rf vendor storage/framework/cache/* storage/framework/views/* storage/framework/sessions/* bootstrap/cache/*.php
+        echo "  - Laravel cache cleaned"
+    fi
+    
+    if [ -d "$CLIENTS_WEB" ]; then
+        cd "$CLIENTS_WEB"
+        rm -rf node_modules dist build .next
+        echo "  - Frontend build artifacts cleaned"
+    fi
+    
+    rm -rf "$SCRIPT_DIR/node_modules" "$SCRIPT_DIR/playwright-report" "$SCRIPT_DIR/test-results"
+    echo "  - Root build artifacts cleaned"
+    
+    echo "✅ Clean complete"
 }
 
 # Main command router
-if [[ $# -lt 1 ]]; then
-    show_help
-    exit 0
-fi
-
-command="$1"
-shift
-
-case "$command" in
-    enforce)
-        run_enforce "${1:-}"
+case "${1:-}" in
+    build)
+        shift
+        cmd_build "$@"
         ;;
-    check)
-        run_check
+    dev)
+        shift
+        cmd_dev "$@"
+        ;;
+    test)
+        shift
+        cmd_test "$@"
+        ;;
+    enforce)
+        shift
+        cmd_enforce "$@"
+        ;;
+    clean)
+        shift
+        cmd_clean "$@"
         ;;
     help|--help|-h)
-        show_help
+        usage
         ;;
-    version|--version|-v)
-        show_version
+    "")
+        usage
+        exit 1
         ;;
     *)
-        echo "Error: unknown command '$command'"
-        echo ""
-        show_help
+        echo "❌ Unknown command: $1"
+        usage
         exit 1
         ;;
 esac

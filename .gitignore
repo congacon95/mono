@@ -1,8 +1,62 @@
 ```
-# Editor/IDE files
-.cursor/
+# Dependencies
+node_modules/
 
-# Compressed files
+# Playwright reports and test results
+playwright-report/
+test-results/
+
+# Environment files
+.env
+.env.local
+*.env.*
+
+# Logs
+*.log
+
+# Build artifacts
+dist/
+build/
+target/
+
+# Python specific
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git/modules/
+*.sublime-workspace
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Compression files
 *.zip
 *.gz
 *.tar
@@ -25,4 +79,13 @@
 *.tar.bz2
 *.tar.xz
 *.tar.zst
+
+# Laravel specific
+servers/laravel/vendor/
+servers/laravel/storage/logs/
+servers/laravel/storage/framework/cache/data/
+servers/laravel/storage/framework/sessions/
+servers/laravel/storage/framework/views/
+servers/laravel/storage/framework/testing/
+servers/laravel/bootstrap/cache/
 ```
